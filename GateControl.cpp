@@ -1,172 +1,155 @@
-//****************************************************************************************
-//
-//	INCLUDE FILES
-//
-//****************************************************************************************
-#include	<iostream>
 
-#include	"GateControl.hpp"
+//	INCLUDE FILES
+
+#include <iostream>
+#include <map>
+#include <vector>
+
+#include "GateControl.hpp"
 
 using namespace std;
 
-//****************************************************************************************
-//
-//	CONSTANT DEFINITIONS
-//
-//****************************************************************************************
-
-//****************************************************************************************
-//
-//	CLASSES, TYPEDEFS AND STRUCTURES
-//
-//****************************************************************************************
-
-//****************************************************************************************
-//
 //	PUBLIC DATA
-//
-//****************************************************************************************
-extern	string	gCurrentDate;
+extern string gCurrentDate;
 
-extern	string	gCurrentTime;
+extern string gCurrentTime;
 
-//****************************************************************************************
-//
-//	PRIVATE DATA
-//
-//****************************************************************************************
 
-//****************************************************************************************
-//
-//	FUNCTION PROTOTYPES
-//
-//****************************************************************************************
+bool GateControl::AccessAllowed(CardNumber number) {
+  //************************************************************************************
+  //	LOCAL DATA
+	AuthorizationIterator it = authorizationMap_.find(number);
 
-//****************************************************************************************
-//
-//	GateControl::AccessAllowed
-//
-//****************************************************************************************
-bool	GateControl::AccessAllowed(CardNumber number)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	
-	return;
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	if (authorizationMap_.find(number) == authorizationMap_.end()) {
+		Transaction newTransaction(number, "***", gCurrentDate, gCurrentTime, false);
+		transactionVector_.push_back(newTransaction);
+		return false;
+	}
+	Authorization newAuthorization = it->second;
+	Transaction newTransaction(number, newAuthorization.name_, gCurrentDate, gCurrentTime, true);
+	transactionVector_.push_back(newTransaction);
+  return true;
 }
 
-//****************************************************************************************
-//
-//	GateControl::AddAuthorization
-//
-//****************************************************************************************
-bool	GateControl::AddAuthorization(CardNumber number, const string& name,
-									  const string& startTime, const string& endTime)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	return;
+bool GateControl::AddAuthorization(CardNumber number, const string &name,
+                                   const string &startTime,
+                                   const string &endTime) {
+  //************************************************************************************
+  //	LOCAL DATA
+  Authorization newAuthorization(number, name, startTime, endTime);
+
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	std::pair<std::map<CardNumber, Authorization>::iterator,bool> ret;
+  ret = authorizationMap_.insert ( std::pair<CardNumber, Authorization>(number, newAuthorization) );
+  return ret.second;
 }
 
-//****************************************************************************************
-//
-//	GateControl::ChangeAuthorization
-//
-//****************************************************************************************
-bool	GateControl::ChangeAuthorization(CardNumber number, const string& name,
-										 const string& startTime, const string& endTime)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	return;
+bool GateControl::ChangeAuthorization(CardNumber number, const string &name,
+                                      const string &startTime,
+                                      const string &endTime) {
+  //************************************************************************************
+  //	LOCAL DATA
+	AuthorizationIterator it;
+	Authorization newAuthorization(number, name, startTime, endTime);
+
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	it = authorizationMap_.find(number);
+	if (it == authorizationMap_.end()) {
+		return false;
+	}
+	it->second = newAuthorization;
+  return true;
 }
 
-//****************************************************************************************
-//
-//	GateControl::DeleteAuthorization
-//
-//****************************************************************************************
-bool	GateControl::DeleteAuthorization(CardNumber number)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	return;
+bool GateControl::DeleteAuthorization(CardNumber number) {
+  //************************************************************************************
+  //	LOCAL DATA
 
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	if (authorizationMap_.find(number) == authorizationMap_.end()) {
+		return false;
+	}
+	authorizationMap_.erase(authorizationMap_.find(number));
+  return true;
 }
 
-//****************************************************************************************
-//
-//	GateControl::GetAllAuthorizations
-//
-//****************************************************************************************
-void	GateControl::GetAllAuthorizations(AuthorizationVector& authorizationVector)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	AuthorizationIterator	iterator;
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
+void GateControl::GetAllAuthorizations(
+    AuthorizationVector &authorizationVector) {
+  //************************************************************************************
+  //	LOCAL DATA
+  AuthorizationIterator it = authorizationMap_.begin();
 
-	return;
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+
+	authorizationVector = {}; // clear vector
+	if (authorizationMap_.empty()) {
+		return; // if map is empty, return
+	}
+	for (it = authorizationMap_.begin(); it != authorizationMap_.end(); ++it) {
+		authorizationVector.push_back(it->second); // copy authorization
+	}
+  return;
 }
 
-//****************************************************************************************
-//
-//	GateControl::GetAllTransactions
-//
-//****************************************************************************************
-void	GateControl::GetAllTransactions(TransactionVector& transactionVector)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
+void GateControl::GetAllTransactions(TransactionVector &transactionVector) {
+  //************************************************************************************
+  //	LOCAL DATA
 
-	return;
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	transactionVector = {};
+	if (transactionVector_.empty()) {
+		return;
+	}
+	for (int i = 0; i < transactionVector_.size(); i++) {
+		transactionVector.push_back(transactionVector_[i]);
+	}
+  return;
 }
 
-//****************************************************************************************
-//
-//	GateControl::GetCardAuthorization
-//
-//****************************************************************************************
-bool	GateControl::GetCardAuthorization(CardNumber number, Authorization& authorization)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
+bool GateControl::GetCardAuthorization(CardNumber number,
+                                       Authorization &authorization) {
+  //************************************************************************************
+  //	LOCAL DATA
+	AuthorizationIterator it;
 
-	return;
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	it = authorizationMap_.find(number);
+	if (it == authorizationMap_.end()) {
+		return false;
+	}
+	authorization = it->second;
+  return true;
 }
 
-//****************************************************************************************
-//
-//	GateControl::GetCardTransactions
-//
-//****************************************************************************************
-bool	GateControl::GetCardTransactions(CardNumber number,
-										 TransactionVector& transactionVector)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	return;
+bool GateControl::GetCardTransactions(CardNumber number,
+                                      TransactionVector &transactionVector) {
+  //************************************************************************************
+  //	LOCAL DATA
+
+  //************************************************************************************
+  //	EXECUTABLE STATEMENTS
+	transactionVector = {};
+	if (transactionVector_.empty()) {
+		return false;
+	}
+
+	for (int i = 0; i < transactionVector_.size(); i++) {
+		if (transactionVector_[i].number_ == number) {
+			transactionVector.push_back(transactionVector_[i]);
+		}
+	}
+
+	if (transactionVector.empty()) {
+		return false;
+	}
+
+  return true;
 }

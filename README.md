@@ -3,4 +3,4 @@
 
 MUST EDIT WITH YOUR OWN NAME AND EMAIL IN THE SAME FORMAT
 
-Ada Lovelace adalovelace@csu.fullerton.edu
+Jeremy Rico jjrico@csu.fullerton.edu

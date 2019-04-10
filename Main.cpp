@@ -24,7 +24,7 @@ class	Result
 {
 	public:
 		Result(): maximum_(80), total_(0) {}
-		
+
 		void	Fail();
 
 		void	Pass(uint64_t score);
@@ -88,6 +88,27 @@ void	TestDelete(Result& result);
 //****************************************************************************************
 int main (int argc, char * const argv[])
 {
+	// Jeremy's Test
+	// Use three stars "***" for blank Transaction name
+	std::cout << "Jeremy's tests" << std::endl;
+	std::cout << "Testing AddAuthorization()" << std::endl;
+	GateControl gateControl;
+	AuthorizationVector	jVector;
+	gateControl.AddAuthorization(1111, "Joe Thornton", "0500", "2100");
+	gateControl.AddAuthorization(2222, "Radim Simek", "0500", "2100");
+	gateControl.GetAllAuthorizations(jVector);
+	gateControl.AddAuthorization(3333, "Evander Kane", "0500", "2100");
+	gateControl.GetAllAuthorizations(jVector);
+	for (int i = 0; i < jVector.size(); i++) {
+		std::cout << jVector[i].name_ << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Testing GetCardAuthorization()" << std::endl;
+	Authorization Thornton;
+	gateControl.GetCardAuthorization(3333, Thornton);
+	std::cout << Thornton.name_ << std::endl;
+
 	//************************************************************************************
 	//	LOCAL DATA
 	Result	result;
@@ -491,12 +512,14 @@ void	TestCard(Result& result)
 
 	bool				good;
 
+	//comment this out
 	bool				success;
 
 	//************************************************************************************
 	//	EXECUTABLE STATEMENTS
 	cout << "Testing Card-Specific Functions" << endl;
 
+	// this may be unecessary idk figure it out stupid
 	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
 	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
 	success = gateControl.AddAuthorization(333, "Jones, Peter", "0333", "2333");
