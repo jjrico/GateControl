@@ -1,4 +1,3 @@
-
 //	INCLUDE FILES
 
 #include <iostream>
@@ -14,142 +13,121 @@ extern string gCurrentDate;
 
 extern string gCurrentTime;
 
-
 bool GateControl::AccessAllowed(CardNumber number) {
-  //************************************************************************************
-  //	LOCAL DATA
-	AuthorizationIterator it = authorizationMap_.find(number);
 
-  //************************************************************************************
+  //	LOCAL DATA
+  AuthorizationIterator it = authorizationMap_.find(number);
+
   //	EXECUTABLE STATEMENTS
-	if (authorizationMap_.find(number) == authorizationMap_.end()) {
-		Transaction newTransaction(number, "***", gCurrentDate, gCurrentTime, false);
-		transactionVector_.push_back(newTransaction);
-		return false;
-	}
-	Authorization newAuthorization = it->second;
-	Transaction newTransaction(number, newAuthorization.name_, gCurrentDate, gCurrentTime, true);
-	transactionVector_.push_back(newTransaction);
+  // if element is not in map, find() returns end() element
+  if (it == authorizationMap_.end()) {
+    // create new transaction using *** for name and false for access
+    Transaction newTransaction(number, "***", gCurrentDate, gCurrentTime,
+                               false);
+    transactionVector_.push_back(newTransaction);
+    return false;
+  }
+  // iterator -> authorization . name
+  Transaction newTransaction(number, it->second.name_, gCurrentDate,
+                             gCurrentTime, true);
+  transactionVector_.push_back(newTransaction);
   return true;
 }
 
 bool GateControl::AddAuthorization(CardNumber number, const string &name,
                                    const string &startTime,
                                    const string &endTime) {
-  //************************************************************************************
   //	LOCAL DATA
   Authorization newAuthorization(number, name, startTime, endTime);
 
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	std::pair<std::map<CardNumber, Authorization>::iterator,bool> ret;
-  ret = authorizationMap_.insert ( std::pair<CardNumber, Authorization>(number, newAuthorization) );
+  // insert() returns a pair. An iterator to the inserted element, and a
+  // boolean which indicates whether insertion was successful
+  std::pair<std::map<CardNumber, Authorization>::iterator, bool> ret;
+  ret = authorizationMap_.insert(
+      std::pair<CardNumber, Authorization>(number, newAuthorization));
+  // return second item of pair returned by insert()
   return ret.second;
 }
 
 bool GateControl::ChangeAuthorization(CardNumber number, const string &name,
                                       const string &startTime,
                                       const string &endTime) {
-  //************************************************************************************
   //	LOCAL DATA
-	AuthorizationIterator it;
-	Authorization newAuthorization(number, name, startTime, endTime);
+  AuthorizationIterator it = authorizationMap_.find(number);
 
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	it = authorizationMap_.find(number);
-	if (it == authorizationMap_.end()) {
-		return false;
-	}
-	it->second = newAuthorization;
+  if (it == authorizationMap_.end()) {
+    return false;
+  }
+  authorizationMap_[number] = {number, name, startTime, endTime};
   return true;
 }
 
 bool GateControl::DeleteAuthorization(CardNumber number) {
-  //************************************************************************************
-  //	LOCAL DATA
+  //	NO LOCAL DATA NEEDED
 
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	if (authorizationMap_.find(number) == authorizationMap_.end()) {
-		return false;
-	}
-	authorizationMap_.erase(authorizationMap_.find(number));
+  if (authorizationMap_.find(number) == authorizationMap_.end()) {
+    return false;
+  }
+  // find() returns iterator so it can be used as input for erase()
+  authorizationMap_.erase(authorizationMap_.find(number));
   return true;
 }
 
 void GateControl::GetAllAuthorizations(
     AuthorizationVector &authorizationVector) {
-  //************************************************************************************
-  //	LOCAL DATA
-  AuthorizationIterator it = authorizationMap_.begin();
-
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
 
-	authorizationVector = {}; // clear vector
-	if (authorizationMap_.empty()) {
-		return; // if map is empty, return
-	}
-	for (it = authorizationMap_.begin(); it != authorizationMap_.end(); ++it) {
-		authorizationVector.push_back(it->second); // copy authorization
-	}
+  authorizationVector = {}; // clear vector
+  if (authorizationMap_.empty()) {
+    return; // if map is empty, return
+  }
+  for (const auto & it : authorizationMap_) {
+    authorizationVector.push_back(it.second); // copy authorization
+  }
   return;
 }
 
 void GateControl::GetAllTransactions(TransactionVector &transactionVector) {
-  //************************************************************************************
-  //	LOCAL DATA
-
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	transactionVector = {};
-	if (transactionVector_.empty()) {
-		return;
-	}
-	for (int i = 0; i < transactionVector_.size(); i++) {
-		transactionVector.push_back(transactionVector_[i]);
-	}
+  transactionVector = {};           // clear output vector
+  if (transactionVector_.empty()) { // range check
+    return;
+  }
+  for (const auto & i : transactionVector_) {
+    transactionVector.push_back(i);
+  }
   return;
 }
 
 bool GateControl::GetCardAuthorization(CardNumber number,
                                        Authorization &authorization) {
-  //************************************************************************************
   //	LOCAL DATA
-	AuthorizationIterator it;
+  AuthorizationIterator it = authorizationMap_.find(number);
 
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	it = authorizationMap_.find(number);
-	if (it == authorizationMap_.end()) {
-		return false;
-	}
-	authorization = it->second;
+  if (it == authorizationMap_.end()) {
+    return false;
+  }
+  authorization = it->second;
   return true;
 }
 
 bool GateControl::GetCardTransactions(CardNumber number,
                                       TransactionVector &transactionVector) {
-  //************************************************************************************
-  //	LOCAL DATA
-
-  //************************************************************************************
   //	EXECUTABLE STATEMENTS
-	transactionVector = {};
-	if (transactionVector_.empty()) {
-		return false;
-	}
+  transactionVector = {};           // clear vector
+  if (transactionVector_.empty()) { // range check
+    return false;
+  }
 
-	for (int i = 0; i < transactionVector_.size(); i++) {
-		if (transactionVector_[i].number_ == number) {
-			transactionVector.push_back(transactionVector_[i]);
-		}
-	}
-
-	if (transactionVector.empty()) {
-		return false;
-	}
+  for (const auto & i : transactionVector_) {   // loop through
+    if (i.number_ == number) {        // if key matches
+      transactionVector.push_back(i); // push_back
+    }
+  }
 
   return true;
 }
