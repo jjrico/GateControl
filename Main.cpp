@@ -1,780 +1,178 @@
-//****************************************************************************************
-//
-//	INCLUDE FILES
-//
-//****************************************************************************************
-#include	<iostream>
+#include <iomanip>
+#include <iostream>
 
-#include	"GateControl.hpp"
+#include "GateControl.hpp"
 
-using namespace std;
+std::string gCurrentDate;
 
-//****************************************************************************************
-//
-//	CONSTANT DEFINITIONS
-//
-//****************************************************************************************
+std::string gCurrentTime;
 
-//****************************************************************************************
-//
-//	CLASSES, TYPEDEFS AND STRUCTURES
-//
-//****************************************************************************************
-class	Result
-{
-	public:
-		Result(): maximum_(80), total_(0) {}
+int main(int argc, char *const argv[]) {
+	// Local Data
 
-		void	Fail();
+  GateControl gateControl;
+  AuthorizationVector jVector;
+  TransactionVector tVector;
+  Authorization authorization;
+  CardNumber card_number;
+  std::string name, start, end;
+  char choice;
+  bool display = true;
 
-		void	Pass(uint64_t score);
+  std::cout << "Welcome to GateControl! Please choose an option: " << std::endl;
 
-		void	SetMaximum(uint64_t maximum);
+  do {
+    std::cout << std::endl;
+    std::cout << "[N] New Transaction" << std::endl;
+    std::cout << "[E] New Authorization" << std::endl;
+    std::cout << "[R] Remove Authorization" << std::endl;
+    std::cout << "[C] Change Authorization" << std::endl;
+    std::cout << "[A] View Authorizations" << std::endl;
+    std::cout << "[G] Get Card Authorization" << std::endl;
+    std::cout << "[T] View All Transactions" << std::endl;
+    std::cout << "[V] View Card Transtactions" << std::endl;
+    std::cout << "[X] Exit" << std::endl;
+    std::cout << "Choice: ";
+    std::cin >> choice;
 
-		void	Show();
+    // ignore the newline char that follows the user input for choice, but
+    // also check for multiple character input
+    std::getline(std::cin, name);
+    if (name.length() > 0) {
+      choice = ' '; // set to invalid "choice"
+    }
 
-	private:
-		uint64_t	maximum_;
+    switch (choice) {
+    case 'N': // Attempt to open the gate with input card number
+    case 'n':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      if (gateControl.AccessAllowed(card_number)) {
+        std::cout << "Access granted!" << std::endl;
+      } else {
+        std::cout << "Access denied." << std::endl;
+      }
+      break;
+    case 'E':	// Add new authorization
+    case 'e':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      cin.ignore(); // ignore new line character
+      std::cout << "Please enter name: ";
+      std::getline(std::cin, name);
+      std::cout << "Please enter start of access time (HHMM 24 HR format): ";
+      std::cin >> start;
+      std::cout << "Please enter end of access time: ";
+      std::cin >> end;
+      if (gateControl.AddAuthorization(card_number, name, start, end)) {
+        std::cout << "\nAuthorization added!" << std::endl;
+      } else {
+        std::cout << "\nAuthorization already in database." << std::endl;
+      }
+      break;
+    case 'R':	// Remove Authorization
+    case 'r':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      if (gateControl.DeleteAuthorization(card_number)) {
+        std::cout << "\nAuthorization deleted!" << std::endl;
+      } else {
+        std::cout << "\nAuthorization not found." << std::endl;
+      }
+      break;
+    case 'C':	// Change Authorization
+    case 'c':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      cin.ignore();
+      std::cout << "Please enter name: ";
+      std::getline(std::cin, name);
+      std::cout << "Please enter start of access time (HHMM 24 HR format): ";
+      std::cin >> start;
+      std::cout << "Please enter end of access time: ";
+      std::cin >> end;
+      if (gateControl.ChangeAuthorization(card_number, name, start, end)) {
+        std::cout << "\nAuthorization changed!" << std::endl;
+      } else {
+        std::cout << "\nCard number not found." << std::endl;
+      }
+      break;
+    case 'A':	// List all authorizations in a formatted table
+    case 'a':
+      jVector = gateControl.GetAllAuthorizations();
+      std::cout << "\nAuthorizations:" << std::endl;
+      std::cout << std::left << std::setw(15) << "Name:"
+                << "Card number:" << std::endl;
+      for (const auto &i : jVector) {
+        std::cout << std::left << std::setw(15) << i.name_;
+        std::cout << i.number_ << std::endl;
+      }
+      std::cout << std::endl;
+      break;
+    case 'G':	// View authorization information pertaining to a certain card
+    case 'g':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      // This function will throw an excpetion if card number is not found
+      // No need for an if else statement.
+      authorization = gateControl.GetCardAuthorization(card_number);
+      std::cout << std::left << std::setw(15)
+                << "Card Number: " << authorization.number_ << std::endl;
+      std::cout << std::left << std::setw(15) << "Name: " << authorization.name_
+                << std::endl;
+      std::cout << std::left << std::setw(15)
+                << "Start time: " << authorization.startTime_ << std::endl;
+      std::cout << std::left << std::setw(15)
+                << "End time: " << authorization.endTime_ << std::endl;
+      break;
+    case 'T': // List all transactions in a formatted table
+    case 't':
+      tVector = gateControl.GetAllTransactions();
+      std::cout << std::endl;
+      std::cout << std::left << std::setw(15) << "Card Number" << std::left
+                << std::setw(15) << "Name" << std::left << std::setw(15)
+                << "Access Allowed" << std::endl;
+      for (const auto &i : tVector) {
+        std::cout << std::left << std::setw(15) << i.number_ << std::left
+                  << std::setw(15) << i.name_;
+        if (i.accessAllowed_) {
+          std::cout << std::left << std::setw(15) << "Yes" << std::endl;
+        } else {
+          std::cout << std::left << std::setw(15) << "No" << std::endl;
+        }
+      }
+      std::cout << std::endl;
+      break;
+    case 'V':	// List all transactions attempted by a card number
+    case 'v':
+      std::cout << "\nPlease enter card number: ";
+      std::cin >> card_number;
+      tVector = gateControl.GetCardTransactions(card_number);
+      std::cout << std::left << std::setw(15) << "Card Number" << std::left
+                << std::setw(15) << "Name" << std::left << std::setw(15)
+                << "Access Allowed" << std::endl;
+      for (const auto &i : tVector) {
+        std::cout << std::left << std::setw(15) << i.number_ << std::left
+                  << std::setw(15) << i.name_;
+        if (i.accessAllowed_) {
+          std::cout << std::left << std::setw(15) << "Yes" << std::endl;
+        } else {
+          std::cout << std::left << std::setw(15) << "No" << std::endl;
+        }
+      }
+      std::cout << std::endl;
+      break;
+    case 'X': // Exit
+    case 'x':
+      display = false;
+      break;
+    default:
+      std::cout << "\nInvalid choice. Please try again.\n";
+      break;
+    }
+  } while (display);
 
-		uint64_t	total_;
-};
+  std::cout << "\nThanks for using GateControl!" << std::endl;
 
-//****************************************************************************************
-//
-//	PUBLIC DATA
-//
-//****************************************************************************************
-	string	gCurrentDate;
-
-	string	gCurrentTime;
-
-//****************************************************************************************
-//
-//	PRIVATE DATA
-//
-//****************************************************************************************
-
-//****************************************************************************************
-//
-//	FUNCTION PROTOTYPES
-//
-//****************************************************************************************
-bool	CompareAuthorizations(AuthorizationVector& actualVector,
-							  AuthorizationVector& expectedVector,
-							  ostream& stream);
-
-bool	CompareTransactions(TransactionVector& actualVector,
-							TransactionVector& expectedVector,
-							ostream& stream);
-
-void	ShowAuthorizations(ostream& stream, AuthorizationVector& authorizationVector);
-
-void	ShowTransactions(ostream& stream, TransactionVector& transactionVector);
-
-void	TestAccess(Result& result);
-
-void	TestAdd(Result& result);
-
-void	TestCard(Result& result);
-
-void	TestChange(Result& result);
-
-void	TestDelete(Result& result);
-
-//****************************************************************************************
-//
-//	MAIN PROGRAM
-//
-//****************************************************************************************
-int main (int argc, char * const argv[])
-{
-	// Jeremy's Test
-	// Use three stars "***" for blank Transaction name
-	std::cout << "Jeremy's tests" << std::endl;
-	std::cout << "Testing AddAuthorization()" << std::endl;
-	GateControl gateControl;
-	AuthorizationVector	jVector;
-	gateControl.AddAuthorization(1111, "Joe Thornton", "0500", "2100");
-	gateControl.AddAuthorization(2222, "Radim Simek", "0500", "2100");
-	gateControl.GetAllAuthorizations(jVector);
-	gateControl.AddAuthorization(3333, "Evander Kane", "0500", "2100");
-	gateControl.GetAllAuthorizations(jVector);
-	for (int i = 0; i < jVector.size(); i++) {
-		std::cout << jVector[i].name_ << " ";
-	}
-	std::cout << std::endl;
-
-	std::cout << "Testing GetCardAuthorization()" << std::endl;
-	Authorization Thornton;
-	gateControl.GetCardAuthorization(3333, Thornton);
-	std::cout << Thornton.name_ << std::endl;
-
-	//************************************************************************************
-	//	LOCAL DATA
-	Result	result;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	result.SetMaximum(80);
-
-	TestAdd(result);
-
-	TestDelete(result);
-
-	TestChange(result);
-
-	TestAccess(result);
-
-	TestCard(result);
-
-	cout << endl << "Final result: ";
-	result.Show();
-
-	cout << endl << "** Finished **" << endl;
-
-	return(0);
+  return (0);
 }
-
-//****************************************************************************************
-//
-//	CompareAuthorizations
-//
-//****************************************************************************************
-bool	CompareAuthorizations(AuthorizationVector& actualVector,
-							  AuthorizationVector& expectedVector,
-							  ostream& stream)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	bool	good;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	good = true;
-	if (actualVector.size() == expectedVector.size())
-	{
-		for (uint64_t i = 0; i < actualVector.size(); ++i)
-		{
-			if ((actualVector[i].number_ != expectedVector[i].number_)
-				||
-				(actualVector[i].name_ != expectedVector[i].name_)
-				||
-				(actualVector[i].startTime_ != expectedVector[i].startTime_)
-				||
-				(actualVector[i].endTime_ != expectedVector[i].endTime_))
-			{
-				stream << "Authorizations don't match" << endl;
-				good = false;
-			}
-		}
-	}
-	else
-	{
-		stream << "Sizes don't match" << endl;
-		good = false;
-	}
-
-	if (!good)
-	{
-		stream << "Actual:"<< endl;
-		ShowAuthorizations(stream, actualVector);
-
-		stream << "Expected:"<< endl;
-		ShowAuthorizations(stream, expectedVector);
-	}
-
-	return(good);
-}
-
-//****************************************************************************************
-//
-//	CompareTransactions
-//
-//****************************************************************************************
-bool	CompareTransactions(TransactionVector& actualVector,
-							TransactionVector& expectedVector,
-							ostream& stream)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	bool	good;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	good = true;
-	if (actualVector.size() == expectedVector.size())
-	{
-		for (uint64_t i = 0; i < actualVector.size(); ++i)
-		{
-			if ((actualVector[i].number_ != expectedVector[i].number_)
-				||
-				(actualVector[i].name_ != expectedVector[i].name_)
-				||
-				(actualVector[i].date_ != expectedVector[i].date_)
-				||
-				(actualVector[i].time_ != expectedVector[i].time_))
-			{
-				stream << "Transactions don't match" << endl;
-				good = false;
-			}
-		}
-	}
-	else
-	{
-		stream << "Sizes don't match" << endl;
-		good = false;
-	}
-
-	if (!good)
-	{
-		stream << "Actual:"<< endl;
-		ShowTransactions(stream, actualVector);
-
-		stream << "Expected:"<< endl;
-		ShowTransactions(stream, expectedVector);
-	}
-
-	return(good);
-}
-
-//****************************************************************************************
-//
-//	ShowAuthorizations
-//
-//****************************************************************************************
-void	ShowAuthorizations(ostream& stream, AuthorizationVector& authorizationVector)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	if (!authorizationVector.empty())
-	{
-		for (uint64_t i = 0; i < authorizationVector.size(); ++i)
-		{
-			stream << i << ": "
-			<< " " << authorizationVector[i].number_
-			<< " " << authorizationVector[i].name_
-			<< " " << authorizationVector[i].startTime_
-			<< " " << authorizationVector[i].endTime_ << endl;
-		}
-	}
-	else
-	{
-		stream << "<empty>" << endl;
-	}
-
-	stream << endl;
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	ShowTransactions
-//
-//****************************************************************************************
-void	ShowTransactions(ostream& stream, TransactionVector& transactionVector)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	if (!transactionVector.empty())
-	{
-		for (uint64_t i = 0; i < transactionVector.size(); ++i)
-		{
-			stream << i << ": "
-			<< " " << transactionVector[i].number_
-			<< " " << transactionVector[i].name_
-			<< " " << transactionVector[i].date_
-			<< " " << transactionVector[i].time_
-			<< " " << boolalpha << transactionVector[i].accessAllowed_ << endl;
-		}
-	}
-	else
-	{
-		stream << "<empty>" << endl;
-	}
-
-	stream << endl;
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	TestAccess
-//
-//****************************************************************************************
-void	TestAccess(Result& result)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	TransactionVector	actualVector;
-
-	TransactionVector	expectedVector;
-
-	GateControl			gateControl;
-
-	bool				good;
-
-	bool				success;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Testing Access" << endl;
-
-	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
-	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
-	success = gateControl.AddAuthorization(333, "Jones, Peter", "0333", "2333");
-
-	cout << "  Allowed 1 (6 points) ";
-	gCurrentDate = "01022019";
-	gCurrentTime = "0100";
-	success = gateControl.AccessAllowed(222);
-
-	expectedVector.push_back(Transaction(222, "Brown, William", "01022019", "0100", true));
-	gateControl.GetAllTransactions(actualVector);
-	good = CompareTransactions(actualVector, expectedVector, cout);
-
-	if (good)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Allowed 2 (5 points) ";
-	gCurrentDate = "01022019";
-	gCurrentTime = "2300";
-	success = gateControl.AccessAllowed(222);
-
-	expectedVector.push_back(Transaction(222, "Brown, William", "01022019", "2300", true));
-	gateControl.GetAllTransactions(actualVector);
-	good = CompareTransactions(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(5);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Denied 1 (6 points) ";
-	gCurrentDate = "01022019";
-	gCurrentTime = "0059";
-	success = gateControl.AccessAllowed(222);
-
-	expectedVector.push_back(Transaction(222, "Brown, William", "01022019", "0059", false));
-	gateControl.GetAllTransactions(actualVector);
-	good = CompareTransactions(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Denied 2 (5 points) ";
-	gCurrentDate = "01022019";
-	gCurrentTime = "2312";
-	success = gateControl.AccessAllowed(444);
-
-	expectedVector.push_back(Transaction(444, "***", "01022019", "2312", false));
-	gateControl.GetAllTransactions(actualVector);
-	good = CompareTransactions(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(5);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	TestAdd
-//
-//****************************************************************************************
-void	TestAdd(Result& result)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	AuthorizationVector	actualVector;
-
-	AuthorizationVector	expectedVector;
-
-	GateControl			gateControl;
-
-	bool				good;
-
-	bool				success;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Testing AddAuthorization" << endl;
-
-	cout << "  Check Empty (5 points) ";
-	gateControl.GetAllAuthorizations(actualVector);
-	if (actualVector.empty())
-	{
-		result.Pass(5);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Add First (6 points) ";
-	expectedVector.push_back(Authorization(111, "Smith, John", "0800", "1700"));
-	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
-	if (success)
-	{
-		gateControl.GetAllAuthorizations(actualVector);
-		good = CompareAuthorizations(actualVector, expectedVector, cout);
-		if (good)
-		{
-			result.Pass(6);
-		}
-		else
-		{
-			result.Fail();
-		}
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Add Second (5 points) ";
-	expectedVector.push_back(Authorization(222, "Brown, William", "0100", "2300"));
-	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
-	if (success)
-	{
-		gateControl.GetAllAuthorizations(actualVector);
-		good = CompareAuthorizations(actualVector, expectedVector, cout);
-		if (good)
-		{
-			result.Pass(5);
-		}
-		else
-		{
-			result.Fail();
-		}
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Add Duplicate (6 points) ";
-	success = gateControl.AddAuthorization(111, "Jones, Peter", "0800", "1700");
-	if (!success)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	TestCard
-//
-//****************************************************************************************
-void	TestCard(Result& result)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	TransactionVector	actualVector;
-
-	Authorization		authorization;
-
-	TransactionVector	expectedVector;
-
-	GateControl			gateControl;
-
-	bool				good;
-
-	//comment this out
-	bool				success;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Testing Card-Specific Functions" << endl;
-
-	// this may be unecessary idk figure it out stupid
-	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
-	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
-	success = gateControl.AddAuthorization(333, "Jones, Peter", "0333", "2333");
-
-	cout << "  GetCardAuthorization (6 points) ";
-	success = gateControl.GetCardAuthorization(222, authorization);
-	if ((authorization.name_ == "Brown, William")
-		&&
-		(authorization.startTime_ == "0100")
-		&&
-		(authorization.endTime_ == "2300"))
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  GetCardTransactions (6 points) ";
-	gCurrentDate = "01022019";
-	gCurrentTime = "0900";
-	success = gateControl.AccessAllowed(111);
-	gCurrentTime = "0901";
-	success = gateControl.AccessAllowed(222);
-	gCurrentTime = "0902";
-	success = gateControl.AccessAllowed(333);
-	gCurrentTime = "0903";
-	success = gateControl.AccessAllowed(111);
-	gCurrentTime = "0904";
-	success = gateControl.AccessAllowed(222);
-	gCurrentTime = "0905";
-	success = gateControl.AccessAllowed(333);
-
-	expectedVector.push_back(Transaction(222, "Brown, William", "01022019", "0901", true));
-	expectedVector.push_back(Transaction(222, "Brown, William", "01022019", "0904", true));
-	gateControl.GetCardTransactions(222, actualVector);
-	good = CompareTransactions(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	TestChange
-//
-//****************************************************************************************
-void	TestChange(Result& result)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	AuthorizationVector	actualVector;
-
-	AuthorizationVector	expectedVector;
-
-	GateControl			gateControl;
-
-	bool				good;
-
-	bool				success;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Testing ChangeAuthorization" << endl;
-
-	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
-	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
-	success = gateControl.AddAuthorization(333, "Jones, Peter", "0333", "2333");
-
-	cout << "  Existing Card (6 points) ";
-	success = gateControl.ChangeAuthorization(222, "Brown, Bill", "1234", "1356");
-
-	expectedVector.push_back(Authorization(111, "Smith, John", "0800", "1700"));
-	expectedVector.push_back(Authorization(222, "Brown, Bill", "1234", "1356"));
-	expectedVector.push_back(Authorization(333, "Jones, Peter", "0333", "2333"));
-
-	gateControl.GetAllAuthorizations(actualVector);
-	good = CompareAuthorizations(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Non-existent Card (6 points) ";
-	success = gateControl.ChangeAuthorization(444, "", "", "");
-	if (!success)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	TestDelete
-//
-//****************************************************************************************
-void	TestDelete(Result& result)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-	AuthorizationVector	actualVector;
-
-	AuthorizationVector	expectedVector;
-
-	GateControl			gateControl;
-
-	bool				good;
-
-	bool				success;
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Testing DeleteAuthorization" << endl;
-
-	success = gateControl.AddAuthorization(111, "Smith, John", "0800", "1700");
-	success = gateControl.AddAuthorization(222, "Brown, William", "0100", "2300");
-	success = gateControl.AddAuthorization(333, "Jones, Peter", "0333", "2333");
-
-	cout << "  Existing Card (6 points) ";
-	success = gateControl.DeleteAuthorization(222);
-
-	expectedVector.push_back(Authorization(111, "Smith, John", "0800", "1700"));
-	expectedVector.push_back(Authorization(333, "Jones, Peter", "0333", "2333"));
-
-	gateControl.GetAllAuthorizations(actualVector);
-	good = CompareAuthorizations(actualVector, expectedVector, cout);
-	if (good)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	cout << "  Non-existent Card (6 points) ";
-	success = gateControl.DeleteAuthorization(444);
-	if (!success)
-	{
-		result.Pass(6);
-	}
-	else
-	{
-		result.Fail();
-	}
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	Result::Fail
-//
-//****************************************************************************************
-void	Result::Fail()
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Fail. ";
-
-	Show();
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	Result::Pass
-//
-//****************************************************************************************
-void	Result::Pass(uint64_t score)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << "Pass. ";
-	total_ += score;
-
-	Show();
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	Result::SetMaximum
-//
-//****************************************************************************************
-void	Result::SetMaximum(uint64_t maximum)
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	maximum_ = maximum;
-
-	return;
-}
-
-//****************************************************************************************
-//
-//	Result::Show
-//
-//****************************************************************************************
-void	Result::Show()
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-	cout << total_ << "/" << maximum_ << " points" << endl;
-
-	return;
-}
-
-#if 0
-//****************************************************************************************
-//
-//	Class::Function
-//
-//****************************************************************************************
-void	Class::Function()
-{
-	//************************************************************************************
-	//	LOCAL DATA
-
-	//************************************************************************************
-	//	EXECUTABLE STATEMENTS
-
-	return;
-}
-
-#endif

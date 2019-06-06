@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <vector>
 
 #include "GateControl.hpp"
@@ -13,6 +14,8 @@ extern string gCurrentDate;
 
 extern string gCurrentTime;
 
+// This function searches for the input cardNumber in the AuthorizationMap,
+// if it is found, returns true. else returns false
 bool GateControl::AccessAllowed(CardNumber number) {
 
   //	LOCAL DATA
@@ -27,13 +30,15 @@ bool GateControl::AccessAllowed(CardNumber number) {
     transactionVector_.push_back(newTransaction);
     return false;
   }
-  // iterator -> authorization . name
+
   Transaction newTransaction(number, it->second.name_, gCurrentDate,
                              gCurrentTime, true);
   transactionVector_.push_back(newTransaction);
   return true;
 }
 
+// Adds authorization to the AuthorizationMap, returns true for a successful
+// insertion and false if not
 bool GateControl::AddAuthorization(CardNumber number, const string &name,
                                    const string &startTime,
                                    const string &endTime) {
@@ -64,6 +69,8 @@ bool GateControl::ChangeAuthorization(CardNumber number, const string &name,
   return true;
 }
 
+// Removes authorization from AuthorizationMap, returns true and removes
+// element if element is in Map. Else returns false.
 bool GateControl::DeleteAuthorization(CardNumber number) {
   //	NO LOCAL DATA NEEDED
 
@@ -76,58 +83,60 @@ bool GateControl::DeleteAuthorization(CardNumber number) {
   return true;
 }
 
-void GateControl::GetAllAuthorizations(
-    AuthorizationVector &authorizationVector) {
-  //	EXECUTABLE STATEMENTS
+// Outputs all Authorizations to an AuthorizationVector
+AuthorizationVector GateControl::GetAllAuthorizations() {
 
-  authorizationVector = {}; // clear vector
+  //	EXECUTABLE STATEMENTS
   if (authorizationMap_.empty()) {
-    return; // if map is empty, return
+    throw std::range_error("AuthorizationMap is empty.");
   }
-  for (const auto & it : authorizationMap_) {
-    authorizationVector.push_back(it.second); // copy authorization
+  AuthorizationVector allAuthorizations;
+  for (const auto &it : authorizationMap_) {
+    allAuthorizations.push_back(it.second); // copy authorization
   }
-  return;
+  return allAuthorizations;
 }
 
-void GateControl::GetAllTransactions(TransactionVector &transactionVector) {
+// Outputs all transactions to a TransactionVector
+TransactionVector GateControl::GetAllTransactions() {
   //	EXECUTABLE STATEMENTS
-  transactionVector = {};           // clear output vector
   if (transactionVector_.empty()) { // range check
-    return;
+    throw std::range_error("No transactions");
   }
-  for (const auto & i : transactionVector_) {
-    transactionVector.push_back(i);
+  TransactionVector allTransactions;
+  for (const auto &i : transactionVector_) {
+    allTransactions.push_back(i);
   }
-  return;
+  return allTransactions;
 }
 
-bool GateControl::GetCardAuthorization(CardNumber number,
-                                       Authorization &authorization) {
+// Searches AuthorizationMap for given card and returns the Authorization
+// that cooresponds to the given card number.
+Authorization GateControl::GetCardAuthorization(CardNumber number) {
   //	LOCAL DATA
   AuthorizationIterator it = authorizationMap_.find(number);
 
   //	EXECUTABLE STATEMENTS
   if (it == authorizationMap_.end()) {
-    return false;
+    throw std::range_error("Card number not found.");
   }
-  authorization = it->second;
-  return true;
+  Authorization authorization = it->second;
+  return authorization;
 }
 
-bool GateControl::GetCardTransactions(CardNumber number,
-                                      TransactionVector &transactionVector) {
+// Searches transactionVector for all transactions cooresponding to the given
+// card number. Returns a vector of all relevant transactions
+TransactionVector GateControl::GetCardTransactions(CardNumber number) {
   //	EXECUTABLE STATEMENTS
-  transactionVector = {};           // clear vector
   if (transactionVector_.empty()) { // range check
-    return false;
+    throw std::range_error("No transactions found");
   }
-
-  for (const auto & i : transactionVector_) {   // loop through
-    if (i.number_ == number) {        // if key matches
-      transactionVector.push_back(i); // push_back
+  TransactionVector transactionVector;
+  for (const auto &i : transactionVector_) { // loop through
+    if (i.number_ == number) {               // if key matches
+      transactionVector.push_back(i);        // push_back
     }
   }
 
-  return true;
+  return transactionVector;
 }

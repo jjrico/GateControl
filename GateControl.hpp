@@ -1,102 +1,81 @@
 #pragma once
 
-//****************************************************************************************
-//
-//	INCLUDE FILES
-//
-//****************************************************************************************
-#include	<iostream>
-#include	<map>
-#include	<vector>
+#include <iostream>
+#include <map>
+#include <vector>
 
 using namespace std;
 
-//****************************************************************************************
-//
-//	CONSTANT DEFINITIONS
-//
-//****************************************************************************************
+typedef uint32_t CardNumber;
 
-//****************************************************************************************
-//
-//	CLASSES, TYPEDEFS AND STRUCTURES
-//
-//****************************************************************************************
-typedef uint32_t	CardNumber;
+typedef uint32_t GateNumber;
 
-typedef uint32_t	GateNumber;
+// Authorization sruct used to create a vector of those allowed inside the gate
+struct Authorization {
+  Authorization() {}
 
-struct	Authorization
-{
-	Authorization() { }
+  Authorization(CardNumber number, const string &name, const string &startTime,
+                const string &endTime)
+      : number_(number), name_(name), startTime_(startTime), endTime_(endTime) {
+  }
 
-	Authorization(CardNumber number, const string& name, const string& startTime, const string& endTime)
-	: number_(number), name_(name), startTime_(startTime), endTime_(endTime) { }
+  CardNumber number_; // Cardnumber
 
-	CardNumber	number_;
+  string name_; // Employee name
 
-	string		name_;
+  string startTime_; // Beginning of access window
 
-	string		startTime_;
-
-	string		endTime_;
+  string endTime_; // End of access window
 };
 
-typedef map<CardNumber, Authorization>	AuthorizationMap;
-typedef	AuthorizationMap::iterator		AuthorizationIterator;
+typedef map<CardNumber, Authorization> AuthorizationMap;
+typedef AuthorizationMap::iterator AuthorizationIterator;
 
-typedef	vector<Authorization>	AuthorizationVector;
+typedef vector<Authorization> AuthorizationVector;
 
-struct	Transaction
-{
-	Transaction() { }
+struct Transaction {
+  Transaction() {}
 
-	Transaction(CardNumber number, const string& name, const string& date, const string& time,
-				bool accessAllowed)
-	: number_(number), name_(name), date_(date), time_(time), accessAllowed_(accessAllowed) { }
+  Transaction(CardNumber number, const string &name, const string &date,
+              const string &time, bool accessAllowed)
+      : number_(number), name_(name), date_(date), time_(time),
+        accessAllowed_(accessAllowed) {}
 
-	CardNumber	number_;
+  CardNumber number_;
 
-	string		name_;
+  string name_;
 
-	string		date_;
+  string date_;
 
-	string		time_;
+  string time_;
 
-	bool		accessAllowed_;
+  bool accessAllowed_;
 };
 
-typedef	vector<Transaction>	TransactionVector;
+typedef vector<Transaction> TransactionVector;
 
-class	GateControl
-{
-	public:
-		bool	AccessAllowed(CardNumber number);
+class GateControl {
+private:
+  AuthorizationMap authorizationMap_;
 
-		bool	AddAuthorization(CardNumber number, const string& name,
-								 const string& startTime, const string& endTime);
+  TransactionVector transactionVector_;
 
-		bool	ChangeAuthorization(CardNumber number, const string& name,
-										const string& startTime, const string& endTime);
+public:
+  bool AccessAllowed(CardNumber number);
 
-		bool	DeleteAuthorization(CardNumber number);
+  bool AddAuthorization(CardNumber number, const string &name,
+                        const string &startTime, const string &endTime);
 
-		void	GetAllAuthorizations(AuthorizationVector& authorizationVector);
+  bool ChangeAuthorization(CardNumber number, const string &name,
+                           const string &startTime, const string &endTime);
 
-		void	GetAllTransactions(TransactionVector& transactionVector);
+  bool DeleteAuthorization(CardNumber number);
 
-		bool	GetCardAuthorization(CardNumber number, Authorization& authorization);
+  AuthorizationVector GetAllAuthorizations();
 
-		bool	GetCardTransactions(CardNumber number, TransactionVector& transactionVector);
+  TransactionVector GetAllTransactions();
 
-	private:
-		AuthorizationMap	authorizationMap_;
-		
-		TransactionVector	transactionVector_;
+  Authorization GetCardAuthorization(CardNumber number);
+
+  TransactionVector GetCardTransactions(CardNumber number);
 };
-
-//****************************************************************************************
-//
-//	FUNCTION PROTOTYPES
-//
-//****************************************************************************************
